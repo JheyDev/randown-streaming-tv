@@ -311,28 +311,37 @@ const fetchContent = async (endpoint, queryParams = {}) => {
   }
 };
 
-const fetchPopularMovies = async () => {
-  moviesContainer.innerHTML = '<p class="text-center col-span-full text-lg text-slate-400">Carregando filmes populares...</p>';
-  allContent = await fetchContent('movie/popular');
-  renderAllContent();
-};
-
-const fetchPopularTvShows = async () => {
-  moviesContainer.innerHTML = '<p class="text-center col-span-full text-lg text-slate-400">Carregando séries populares...</p>';
-  const tvShows = await fetchContent('tv/popular');
-  allContent = allContent.concat(tvShows);
+const fetchInitialContent = async () => {
+  moviesContainer.innerHTML = '<p class="text-center col-span-full text-lg text-slate-400">Carregando filmes e séries populares...</p>';
+  try {
+    const [popularMovies, popularTvShows] = await Promise.all([
+      fetchContent('movie/popular'),
+      fetchContent('tv/popular')
+    ]);
+    allContent = [...popularMovies, ...popularTvShows];
+  } catch (error) {
+    console.error("Falha ao carregar conteúdo inicial:", error);
+    allContent = [];
+  }
   renderAllContent();
 };
 
 const searchContent = async (query) => {
   if (query.trim() === '') {
-    await fetchPopularMovies();
+    await fetchInitialContent();
     return;
   }
   moviesContainer.innerHTML = '<p class="text-center col-span-full text-lg text-slate-400">Buscando por filmes e séries...</p>';
-  const movies = await fetchContent('search/movie', { query });
-  const tvShows = await fetchContent('search/tv', { query });
-  allContent = [...movies, ...tvShows];
+  try {
+    const [movies, tvShows] = await Promise.all([
+      fetchContent('search/movie', { query }),
+      fetchContent('search/tv', { query })
+    ]);
+    allContent = [...movies, ...tvShows];
+  } catch (error) {
+    console.error("Falha ao buscar conteúdo:", error);
+    allContent = [];
+  }
   renderAllContent();
 };
 
@@ -537,5 +546,5 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderFilterButtons(company, companyContainer, selectedCompany);
   renderSelectOptions(ageRatings, ageRatingSelect);
   updateHeaderButtons();
-  await fetchPopularMovies();
+  await fetchInitialContent(); // Agora chama a nova função para carregar filmes e séries
 });
