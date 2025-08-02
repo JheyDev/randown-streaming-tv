@@ -1,7 +1,7 @@
 // A API Key para a API do TMDb (The Movie Database)
 // Obtenha sua chave em https://www.themoviedb.org/settings/api
 // Substitua o placeholder abaixo pela sua chave real.
-const TMDB_API_KEY = "YOUR_TMDB_API_KEY";
+const TMDB_API_KEY = "9221a2092fe0e3be0c99f5ff26c99da2";
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500";
 
@@ -107,8 +107,8 @@ const filterContent = (contentArray) => {
     const matchesPlatform = selectedPlatform === '' || content.platforms?.includes(selectedPlatform);
     const matchesAgeRating = selectedAgeRating === '' || (content.ageRating === 'Livre' ? true : parseInt(content.ageRating) <= parseInt(selectedAgeRating));
     const matchesSearch = searchText === '' ||
-      content.title.toLowerCase().includes(searchText.toLowerCase()) ||
-      content.overview.toLowerCase().includes(searchText.toLowerCase());
+      (content.title && content.title.toLowerCase().includes(searchText.toLowerCase())) ||
+      (content.overview && content.overview.toLowerCase().includes(searchText.toLowerCase()));
 
     return matchesGenre && matchesMood && matchesCompany && matchesPlatform && matchesAgeRating && matchesSearch;
   });
