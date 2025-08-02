@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seu Guia para o Filme Perfeito</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Google Fonts for Inter and Poppins -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Poppins:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    /* Estilos customizados e animações */
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .font-display {
+      font-family: 'Poppins', sans-serif;
+    }
+    .animate-fadeIn {
+      animation: fadeIn 0.5s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-spin-fast {
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    /* Estilo para esconder os modais */
+    #movie-detail-modal.hidden, #login-modal.hidden {
+      display: none;
+    }
+
+    /* Efeito de sobreposição no card do filme (para imagem e texto) */
+    #movies-container .group > div:first-child {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(to top, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0) 60%);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: flex-start;
+      padding: 1rem;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen antialiased">
+
+  <!-- Header -->
+  <header class="bg-slate-900 border-b border-slate-800 py-4 shadow-lg sticky top-0 z-40">
+    <div class="container mx-auto px-4 flex flex-col md:flex-row items-center justify-between">
+      <h1 class="text-3xl font-display font-bold text-purple-400 mb-4 md:mb-0 text-center md:text-left">
+        <a href="#" id="home-btn" class="flex items-center">
+          <i data-lucide="camera" class="w-8 h-8 mr-2 text-purple-400"></i>
+          Seu Guia para o Filme Perfeito
+        </a>
+      </h1>
+      <div class="flex flex-wrap justify-center md:justify-end items-center space-x-4">
+        <button id="watched-list-btn" class="flex items-center px-4 py-2 text-sm font-medium text-purple-400 bg-slate-800 rounded-full hover:bg-slate-700 transition-colors duration-200 shadow-md">
+          <i data-lucide="bookmark-check" class="mr-1 w-4 h-4"></i>
+          Meus Assistidos
+        </button>
+        <button id="open-login-btn" class="flex items-center px-4 py-2 text-sm font-medium text-purple-300 bg-slate-800 rounded-full hover:bg-slate-700 transition-colors duration-200 shadow-md">
+          <i data-lucide="log-in" class="mr-1 w-4 h-4"></i>
+          Login
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container mx-auto px-4 py-8">
+    <section id="filter-section" class="bg-slate-900 p-6 rounded-2xl shadow-xl border border-slate-800 mb-8 animate-fadeIn">
+      <h2 class="text-2xl font-display font-bold text-purple-400 mb-6 text-center">Encontre o Filme Ideal</h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+        <!-- Filtro de Gênero -->
+        <div>
+          <label class="block text-slate-300 text-sm font-bold mb-2">Gênero:</label>
+          <div id="genres-container" class="flex flex-wrap gap-2">
+            <!-- Botões de gênero serão injetados aqui pelo JS -->
+          </div>
+        </div>
+
+        <!-- Filtro de Humor -->
+        <div>
+          <label class="block text-slate-300 text-sm font-bold mb-2">Humor:</label>
+          <div id="moods-container" class="flex flex-wrap gap-2">
+            <!-- Botões de humor serão injetados aqui pelo JS -->
+          </div>
+        </div>
+
+        <!-- Filtro de Companhia -->
+        <div>
+          <label class="block text-slate-300 text-sm font-bold mb-2">Companhia:</label>
+          <div id="company-container" class="flex flex-wrap gap-2">
+            <!-- Botões de companhia serão injetados aqui pelo JS -->
+          </div>
+        </div>
+
+        <!-- Filtro de Plataforma de Streaming -->
+        <div>
+          <label for="platform-select" class="block text-slate-300 text-sm font-bold mb-2">Plataforma de Streaming:</label>
+          <select id="platform-select" class="block w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg shadow-sm focus:outline-none focus:border-purple-500 focus:ring focus:ring-purple-500 focus:ring-opacity-50 text-white">
+            <option value="">Todas</option>
+            <option value="Netflix">Netflix</option>
+            <option value="HBO Max">HBO Max</option>
+            <option value="Prime Video">Prime Video</option>
+            <option value="Disney+">Disney+</option>
+            <option value="Star+">Star+</option>
+            <!-- Adicione mais opções de plataforma aqui conforme necessário -->
+          </select>
+        </div>
+
+        <!-- Filtro de Classificação Etária -->
+        <div>
+          <label for="age-rating-select" class="block text-slate-300 text-sm font-bold mb-2">Classificação Etária:</label>
+          <select id="age-rating-select" class="block w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg shadow-sm focus:outline-none focus:border-purple-500 focus:ring focus:ring-purple-500 focus:ring-opacity-50 text-white">
+            <option value="">Todas</option>
+            <!-- Opções serão injetadas aqui pelo JS -->
+          </select>
+        </div>
+
+        <!-- Campo de Busca por Título/Diretor/Elenco -->
+        <div>
+          <label for="search-input" class="block text-slate-300 text-sm font-bold mb-2">Buscar (Título, Diretor, Elenco):</label>
+          <input type="text" id="search-input" placeholder="Pesquisar..." class="block w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg shadow-sm focus:outline-none focus:border-purple-500 focus:ring focus:ring-purple-500 focus:ring-opacity-50 text-white">
+        </div>
+      </div>
+
+      <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
+        <button id="filter-btn" class="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-full transition-colors duration-200 shadow-lg flex items-center justify-center">
+          <i data-lucide="filter" class="mr-2"></i>
+          Aplicar Filtros
+        </button>
+        <button id="clear-filters-btn" class="w-full sm:w-auto bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-6 rounded-full transition-colors duration-200 shadow-lg flex items-center justify-center">
+          <i data-lucide="x-circle" class="mr-2"></i>
+          Limpar Filtros
+        </button>
+        <button id="roulette-btn" class="w-full sm:w-auto bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 px-6 rounded-full transition-colors duration-200 shadow-lg flex items-center justify-center relative">
+          <i data-lucide="shuffle" class="mr-2"></i>
+          Roleta da Indecisão
+          <span id="roulette-spinner" class="ml-2 hidden">
+            <i data-lucide="loader-2" class="w-5 h-5 animate-spin-fast"></i>
+          </span>
+        </button>
+      </div>
+      <p id="roulette-text" class="mt-4 text-lg text-center font-semibold text-purple-300 hidden"></p>
+    </section>
+
+    <section id="movie-list-section" class="animate-fadeIn">
+      <h2 class="text-2xl font-display font-bold text-purple-400 mb-6 text-center" id="movie-list-title">Filmes e Séries Disponíveis</h2>
+      <p id="movie-count" class="text-slate-400 text-center mb-6">Carregando...</p>
+      <div id="movies-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <!-- Filmes e séries serão injetados aqui pelo JS -->
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal de Detalhes do Filme/Série -->
+  <div id="movie-detail-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-lg animate-fadeIn hidden">
+    <div class="relative bg-slate-900 p-6 md:p-8 rounded-3xl shadow-2xl border border-slate-700 max-w-4xl w-full transform scale-95 md:scale-100 transition-transform">
+      <button id="close-modal-btn" class="absolute top-4 right-4 text-red-400 hover:text-red-300 transition-colors z-10">
+        <i data-lucide="x" class="w-6 h-6"></i>
+      </button>
+      <div id="movie-detail-content" class="flex flex-col md:flex-row gap-6 md:gap-8 items-start">
+        <!-- Conteúdo do detalhe do filme será injetado aqui pelo JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Login -->
+  <div id="login-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-lg animate-fadeIn hidden">
+    <div class="relative bg-slate-900 p-6 md:p-8 rounded-3xl shadow-2xl border border-slate-700 max-w-md w-full transform scale-95 md:scale-100 transition-transform">
+      <button id="close-login-modal-btn" class="absolute top-4 right-4 text-red-400 hover:text-red-300 transition-colors z-10">
+        <i data-lucide="x" class="w-6 h-6"></i>
+      </button>
+      <h2 class="text-3xl font-bold font-display text-purple-400 mb-6 text-center">Login</h2>
+      <form id="login-form" class="space-y-4">
+        <div>
+          <label for="username" class="block text-slate-300 text-sm font-bold mb-2">Usuário ou Email:</label>
+          <input type="text" id="username" name="username" class="shadow appearance-none border border-slate-700 rounded w-full py-2 px-3 bg-slate-800 text-white leading-tight focus:outline-none focus:shadow-outline focus:border-purple-500" placeholder="Seu usuário ou email">
+        </div>
+        <div>
+          <label for="password" class="block text-slate-300 text-sm font-bold mb-2">Senha:</label>
+          <input type="password" id="password" name="password" class="shadow appearance-none border border-slate-700 rounded w-full py-2 px-3 bg-slate-800 text-white leading-tight focus:outline-none focus:shadow-outline focus:border-purple-500" placeholder="Sua senha">
+        </div>
+        <div class="flex items-center justify-between">
+          <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-full focus:outline-none focus:shadow-outline transition-colors">
+            Entrar
+          </button>
+          <a href="#" class="inline-block align-baseline font-bold text-sm text-purple-400 hover:text-purple-300">
+            Esqueceu a senha?
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
