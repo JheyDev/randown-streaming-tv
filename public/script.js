@@ -1,7 +1,6 @@
-
-
 let parentalPin = localStorage.getItem('parentalPin') || '0000';
-let pinValidated = false;
+// Inicializa pinValidated a partir do localStorage. Se não existir, assume false.
+let pinValidated = localStorage.getItem('pinValidated') === 'true';
 
 // Modal PIN
 let pinModal = null;
@@ -20,6 +19,8 @@ const loadingIndicator = document.getElementById('loading');
 const genreSelect = document.getElementById('genre-select');
 const yearSelect = document.getElementById('year-select');
 const ratingSelect = document.getElementById('rating-select');
+const watchWithSelect = document.getElementById('watch-with-select'); // Novo seletor
+const platformSelect = document.getElementById('platform-select');     // Novo seletor
 const applyFiltersBtn = document.getElementById('apply-filters-btn');
 const movieListTitle = document.getElementById('movie-list-title');
 
@@ -47,7 +48,8 @@ const closeMessageBtn = document.getElementById('close-message-btn');
 let currentPage = 1;
 let totalPages = 1;
 let loading = false;
-let currentFilters = {};
+let currentFilters = {}; // Este objeto é atualizado ao clicar em "Aplicar"
+
 const genres = {};
 const genreMap = {}; // Mapeia id do gênero para o nome
 
@@ -78,8 +80,10 @@ function showPinModal(callback) {
     pinModal.querySelector('#parental-pin-submit').onclick = () => {
       if (pinInput.value === parentalPin) {
         pinValidated = true;
+        localStorage.setItem('pinValidated', 'true'); // Salva o estado no localStorage
         pinModal.classList.add('hidden');
         pinError.classList.add('hidden');
+        removeBlurFromAdultMovies(); // Remove o desfoque de todos os filmes +18
         callback();
       } else {
         pinError.classList.remove('hidden');
@@ -123,8 +127,9 @@ async function createMovieCard(movie, isCarousel = false) {
   const movieCard = document.createElement('div');
   movieCard.dataset.movieId = movie.id;
 
-  const widthClass = isCarousel ? 'w-[150px] sm:w-[200px]' : '';
-  const marginClass = isCarousel ? '' : 'lg:max-w-[200px] xl:max-w-[250px]';
+  // Ajuste de tamanho para os cards do carrossel
+  const widthClass = isCarousel ? 'w-[100px] sm:w-[140px]' : ''; // Reduzido ainda mais
+  const marginClass = isCarousel ? '' : 'lg:max-w-[160px] xl:max-w-[200px]'; // Ajustado max-width para a grade principal
 
   const posterPath = movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://placehold.co/500x750/1e293b/e2e8f0?text=Sem+Imagem';
 
@@ -136,10 +141,10 @@ async function createMovieCard(movie, isCarousel = false) {
       <div class="absolute top-2 left-2 z-10 flex flex-wrap gap-1" id="rating-container-${movie.id}"></div>
     </div>
     <div class="p-4">
-      <h3 class="text-white text-lg font-semibold truncate">${movie.title}</h3>
-      <p class="text-sm text-slate-400 mt-1">${movie.release_date ? movie.release_date.substring(0, 4) : ''}</p>
-      <div class="flex items-center mt-2 text-sm text-amber-400">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-star-fill"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      <h3 class="text-white text-sm font-semibold truncate">${movie.title}</h3> <!-- Título ajustado para text-sm -->
+      <p class="text-xs text-slate-400 mt-1">${movie.release_date ? movie.release_date.substring(0, 4) : ''}</p> <!-- Ano ajustado para text-xs -->
+      <div class="flex items-center mt-2 text-xs text-amber-400"> <!-- Estrelas e nota ajustadas para text-xs -->
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-star-fill"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
         <span class="ml-1">${movie.vote_average.toFixed(1)}</span>
       </div>
     </div>
@@ -149,25 +154,39 @@ async function createMovieCard(movie, isCarousel = false) {
   const ratingContainer = movieCard.querySelector(`#rating-container-${movie.id}`);
   let ratingBadgeHtml = '<span class="text-slate-500 text-xs">Carregando classificação...</span>';
   if (ratingContainer) {
-    ratingContainer.innerHTML = ratingBadgeHtml;
-    const ageRatingData = await fetchAgeRating(movie.id);
-    if (ageRatingData && Array.isArray(ageRatingData.release_dates)) {
-      const certification = ageRatingData.release_dates[0]?.certification;
-      if (certification && certification.trim() !== '') {
-        ratingBadgeHtml = createAgeRatingElement({ certification }).outerHTML;
+    // Prioriza o flag 'adult' para exibir '+18'
+    if (movie.adult) {
+      ratingBadgeHtml = createAgeRatingElement({ certification: '18' }).outerHTML;
+    } else {
+      const ageRatingData = await fetchAgeRating(movie.id);
+      if (ageRatingData && Array.isArray(ageRatingData.release_dates)) {
+        const certification = ageRatingData.release_dates[0]?.certification;
+        if (certification && certification.trim() !== '') {
+          ratingBadgeHtml = createAgeRatingElement({ certification }).outerHTML;
+        } else {
+          ratingBadgeHtml = '<span class="text-slate-500 text-xs">N/D</span>';
+        }
       } else {
         ratingBadgeHtml = '<span class="text-slate-500 text-xs">N/D</span>';
       }
-    } else {
-      ratingBadgeHtml = '<span class="text-slate-500 text-xs">N/D</span>';
     }
     ratingContainer.innerHTML = ratingBadgeHtml;
   }
 
   // Armazena os dados do filme no card para uso posterior (roleta, etc)
-  movieCard.movieData = movie;
+  // Adicionando genre_ids ao movieData para filtro correto
+  movieCard.movieData = { ...movie, genre_ids: movie.genre_ids };
 
   // Controle parental: bloqueia filmes +18
+  const posterImg = movieCard.querySelector('img');
+  if (movie.adult && !pinValidated) {
+      posterImg.classList.add('blurred-poster');
+      const overlayDiv = document.createElement('div');
+      overlayDiv.className = 'adult-overlay absolute inset-0 flex items-center justify-center bg-black bg-opacity-60 text-white text-4xl font-bold rounded-xl';
+      overlayDiv.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-lock"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
+      movieCard.appendChild(overlayDiv);
+  }
+
   movieCard.addEventListener('click', () => {
     if (movie.adult && !pinValidated) {
       showPinModal(() => showContentDetails(movie.id));
@@ -179,64 +198,41 @@ async function createMovieCard(movie, isCarousel = false) {
   return movieCard;
 }
 
+// Função para remover o desfoque de todos os filmes +18
+function removeBlurFromAdultMovies() {
+    const adultCards = document.querySelectorAll('.movie-card'); // Seleciona todos os cards de filme
+    adultCards.forEach(card => {
+        const movie = card.movieData;
+        if (movie && movie.adult) { // Verifica se é um filme adulto
+            const posterImg = card.querySelector('img');
+            const overlayDiv = card.querySelector('.adult-overlay');
+            if (posterImg) {
+                posterImg.classList.remove('blurred-poster');
+            }
+            if (overlayDiv) {
+                overlayDiv.remove(); // Remove o elemento de overlay
+            }
+        }
+    });
+}
+
+
 // Renderiza a lista de filmes
 // Função para roleta de filme aleatório
 function rouletteMovie() {
   if (!rouletteModal) {
     rouletteModal = document.createElement('div');
     rouletteModal.className = 'fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50';
+    // Conteúdo da modal da roleta sem os seletores de filtro
     rouletteModal.innerHTML = `
       <div class="bg-slate-800 rounded-xl shadow-2xl p-8 w-full max-w-md relative flex flex-col gap-4">
         <h3 class="text-2xl font-bold text-white mb-2 text-center">Roleta de Filme</h3>
-        <label class="text-slate-300 font-semibold">Com quem vai assistir?</label>
-        <select id="roulette-withwho" class="bg-slate-700 border border-slate-600 rounded-md p-2 text-white mb-2">
-          <option value="Sozinho">Sozinho</option>
-          <option value="Amigos">Amigos</option>
-          <option value="Família">Família</option>
-          <option value="Parceiro(a)">Parceiro(a)</option>
-          <option value="Colegas">Colegas</option>
-          <option value="Outro">Outro</option>
-        </select>
-        <label class="text-slate-300 font-semibold">Classificação indicativa</label>
-        <select id="roulette-rating" class="bg-slate-700 border border-slate-600 rounded-md p-2 text-white mb-2">
-          <option value="">Qualquer</option>
-          <option value="L">Livre</option>
-          <option value="10">10</option>
-          <option value="12">12</option>
-          <option value="14">14</option>
-          <option value="16">16</option>
-          <option value="18">18</option>
-        </select>
-        <label class="text-slate-300 font-semibold">Gênero</label>
-        <select id="roulette-genre" class="bg-slate-700 border border-slate-600 rounded-md p-2 text-white mb-2">
-          <option value="">Qualquer</option>
-        </select>
-        <label class="text-slate-300 font-semibold">Ano</label>
-        <select id="roulette-year" class="bg-slate-700 border border-slate-600 rounded-md p-2 text-white mb-2">
-          <option value="">Qualquer</option>
-        </select>
+        <p class="text-slate-300 text-center">Sorteando um filme com base nos filtros da página principal...</p>
         <button id="roulette-run" class="w-full bg-amber-500 text-slate-900 font-bold py-2 px-4 rounded-md shadow-lg hover:bg-amber-400 transition-colors">Sortear Filme</button>
         <button id="roulette-cancel" class="w-full bg-slate-700 text-slate-200 font-bold py-2 px-4 rounded-md shadow-lg hover:bg-slate-600 transition-colors mt-2">Cancelar</button>
       </div>
     `;
     document.body.appendChild(rouletteModal);
-
-    // Preenche gêneros e anos
-    const genreSelectEl = rouletteModal.querySelector('#roulette-genre');
-    Object.entries(genres).forEach(([id, name]) => {
-      const option = document.createElement('option');
-      option.value = id;
-      option.textContent = name;
-      genreSelectEl.appendChild(option);
-    });
-    const yearSelectEl = rouletteModal.querySelector('#roulette-year');
-    const currentYear = new Date().getFullYear();
-    for (let i = currentYear; i >= 1900; i--) {
-      const option = document.createElement('option');
-      option.value = i;
-      option.textContent = i;
-      yearSelectEl.appendChild(option);
-    }
 
     // Cancelar
     rouletteModal.querySelector('#roulette-cancel').onclick = () => {
@@ -245,55 +241,99 @@ function rouletteMovie() {
 
     // Sortear
     rouletteModal.querySelector('#roulette-run').onclick = () => {
-      const withWho = rouletteModal.querySelector('#roulette-withwho').value;
-      const selectedRating = rouletteModal.querySelector('#roulette-rating').value;
-      const selectedGenre = rouletteModal.querySelector('#roulette-genre').value;
-      const selectedYear = rouletteModal.querySelector('#roulette-year').value;
+      // PEGA OS FILTROS DIRETAMENTE DOS ELEMENTOS SELECT DA PÁGINA PRINCIPAL
+      const selectedGenre = genreSelect.value;
+      const selectedYear = yearSelect.value;
+      const selectedRating = ratingSelect.value;
+      const withWho = watchWithSelect.value;
+      const selectedPlatform = platformSelect.value;
+
+      console.log('Filtros da página principal para a roleta (direto dos seletores):', { withWho, selectedRating, selectedGenre, selectedYear, selectedPlatform });
 
       // Filtra os cards
       const visibleCards = Array.from(movieContainer.children).filter(card => {
         const movie = card.movieData || null;
-        if (!movie || (movie.adult && !pinValidated)) return false;
+        if (!movie || (movie.adult && !pinValidated)) {
+          console.log(`Filme ${movie?.title} ignorado (adulto ou sem dados):`, movie);
+          return false;
+        }
 
-        // Filtra classificação indicativa (ignora se não houver dado)
+        let passFilters = true;
+
+        // Filtra classificação indicativa
         if (selectedRating && selectedRating !== '') {
           let cert = null;
-          if (movie.release_dates && movie.release_dates.results) {
+          if (movie.adult) { // Se o filme é adulto, ele é +18
+            cert = '18';
+          } else if (movie.release_dates && movie.release_dates.results) {
             const brRelease = movie.release_dates.results.find(r => r.iso_3166_1 === 'BR');
             cert = brRelease?.release_dates[0]?.certification;
-          } else if (movie.certification) {
-            cert = movie.certification;
           }
-          if (cert && cert !== selectedRating) return false;
+          const ratingOrder = ['L', '10', '12', '14', '16', '18'];
+          const selectedIdx = ratingOrder.indexOf(selectedRating);
+          const movieCertIdx = ratingOrder.indexOf(cert);
+
+          if (selectedIdx !== -1 && movieCertIdx !== -1) {
+            if (movieCertIdx > selectedIdx) { // Se a classificação do filme é mais alta que a selecionada
+              passFilters = false;
+              console.log(`Filme ${movie.title} falhou no filtro de classificação. Esperado: <= ${selectedRating}, Encontrado: ${cert}`);
+            }
+          } else if (selectedRating !== 'Todas as Classificações' && cert !== selectedRating) {
+             passFilters = false;
+             console.log(`Filme ${movie.title} falhou no filtro de classificação. Esperado: ${selectedRating}, Encontrado: ${cert}`);
+          }
         }
 
-        // Filtra gênero (ignora se não houver dado)
-        if (selectedGenre && selectedGenre !== '') {
-          if (movie.genres && Array.isArray(movie.genres)) {
-            if (!movie.genres.some(g => g.id == selectedGenre || g == selectedGenre)) return false;
+        // Filtra gênero
+        if (passFilters && selectedGenre && selectedGenre !== '') {
+          if (!movie.genre_ids || !movie.genre_ids.includes(parseInt(selectedGenre))) {
+            passFilters = false;
+            console.log(`Filme ${movie.title} falhou no filtro de gênero. Esperado: ${selectedGenre}, Encontrado: ${movie.genre_ids}`);
           }
         }
 
-        // Filtra ano (ignora se não houver dado)
-        if (selectedYear && selectedYear !== '') {
-          if (movie.release_date && !movie.release_date.startsWith(selectedYear)) return false;
+        // Filtra ano
+        if (passFilters && selectedYear && selectedYear !== '') {
+          if (!movie.release_date || !movie.release_date.startsWith(selectedYear)) {
+            passFilters = false;
+            console.log(`Filme ${movie.title} falhou no filtro de ano. Esperado: ${selectedYear}, Encontrado: ${movie.release_date}`);
+          }
         }
-        return true;
+
+        // Filtra "Assistir com" e "Plataforma" - A LÓGICA AQUI AINDA ESTÁ COMENTADA
+        // pois esses dados não vêm diretamente na busca principal do TMDb.
+        // Para implementar, você precisaria de dados adicionais ou uma busca mais complexa.
+        /*
+        if (passFilters && withWho && withWho !== '') {
+            // Lógica para filtrar por "Assistir com"
+        }
+        if (passFilters && selectedPlatform && selectedPlatform !== '') {
+            // Lógica para filtrar por "Plataforma"
+        }
+        */
+
+        console.log(`Filme ${movie.title} - Passou nos filtros? ${passFilters}`);
+        return passFilters;
       });
+
+      console.log('Filmes visíveis após filtragem:', visibleCards.map(card => card.movieData.title));
+
+
       if (visibleCards.length === 0) {
         showMessage('Nenhum filme disponível para roleta com esses critérios.', true);
-        rouletteModal.classList.add('hidden');
+        rouletteModal.classList.add('hidden'); // Fecha a modal se nenhum filme for encontrado
         return;
       }
       const randomCard = visibleCards[Math.floor(Math.random() * visibleCards.length)];
       if (randomCard) {
-        // Monta mensagem detalhada
-        let msg = `Dica: assista com ${withWho}`;
+        // Monta mensagem detalhada (usando os valores dos filtros da página principal)
+        let msg = `Dica: assista com ${withWho || 'qualquer um'}`; // Ajusta para exibir "qualquer um" se não selecionado
         if (selectedRating && selectedRating !== '') msg += ` | Classificação: ${selectedRating}`;
         if (selectedGenre && selectedGenre !== '') msg += ` | Gênero: ${genres[selectedGenre] || selectedGenre}`;
         if (selectedYear && selectedYear !== '') msg += ` | Ano: ${selectedYear}`;
+        // REMOVIDO: if (selectedPlatform && selectedPlatform !== '') msg += ` | Plataforma: ${selectedPlatform}`; // Adiciona plataforma
         showMessage(msg);
-        rouletteModal.classList.add('hidden');
+        rouletteModal.classList.add('hidden'); // Fecha a modal após sortear e mostrar mensagem
         setTimeout(() => randomCard.click(), 1200);
       }
     };
@@ -385,7 +425,6 @@ async function fetchAndPopulateGenres() {
   }
 }
 
-
 // --- Funções de API e Renderização Principal ---
 
 // Busca filmes com base nos filtros
@@ -396,7 +435,6 @@ async function fetchMovies(page = 1, filters = {}) {
   if (page === 1) {
     loadingIndicator.classList.remove('hidden');
     movieContainer.innerHTML = ''; // Limpa a lista para a nova busca
-    movieListTitle.textContent = 'Buscando Filmes...';
   } else {
     loadingIndicator.classList.remove('hidden');
   }
@@ -406,9 +444,15 @@ async function fetchMovies(page = 1, filters = {}) {
     with_genres: filters.genre || '',
     'primary_release_date.gte': filters.year ? `${filters.year}-01-01` : '',
     'primary_release_date.lte': filters.year ? `${filters.year}-12-31` : '',
-    'vote_average.gte': filters.rating || '',
     append_to_response: 'release_dates' // Adicionado para buscar release_dates
   };
+
+  // Adiciona o filtro de classificação indicativa se selecionado
+  if (filters.rating && filters.rating !== '') {
+    params.certification_country = 'BR'; // Sempre filtra para o Brasil
+    // Usar certification.lte para incluir classificações iguais ou menos restritivas
+    params['certification.lte'] = filters.rating;
+  }
 
   // Limpa os parâmetros vazios para evitar erros na API
   Object.keys(params).forEach(key => params[key] === '' && delete params[key]);
@@ -420,7 +464,8 @@ async function fetchMovies(page = 1, filters = {}) {
 
     if (page === 1) {
       await renderMovies(movies, movieContainer); // Await here
-      movieListTitle.textContent = 'Filmes Populares';
+      // Atualiza o título da lista de filmes com base nos filtros
+      updateMovieListTitle(filters);
     } else {
       await renderMovies(movies, movieContainer, true); // Await here
     }
@@ -431,6 +476,36 @@ async function fetchMovies(page = 1, filters = {}) {
   } finally {
     loading = false;
     loadingIndicator.classList.add('hidden');
+  }
+}
+
+// Função para atualizar o título da lista de filmes
+function updateMovieListTitle(filters) {
+  let titleParts = [];
+  if (filters.genre && filters.genre !== '') {
+    titleParts.push(genres[filters.genre]);
+  }
+  if (filters.year && filters.year !== '') {
+    titleParts.push(filters.year);
+  }
+  if (filters.rating && filters.rating !== '') {
+    let displayRating = filters.rating;
+    if (filters.rating === 'L') {
+      displayRating = 'Livre';
+    }
+    titleParts.push(`Classificação: ${displayRating}`);
+  }
+  if (filters.watchWith && filters.watchWith !== '') {
+    titleParts.push(`Para assistir com: ${filters.watchWith}`);
+  }
+  // REMOVIDO: if (filters.platform && filters.platform !== '') {
+  // REMOVIDO:   titleParts.push(`Disponível em: ${filters.platform}`);
+  // REMOVIDO: }
+
+  if (titleParts.length > 0) {
+    movieListTitle.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-film"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 3v18"/><path d="M3 7.5h18"/><path d="M3 12h18"/><path d="M3 16.5h18"/></svg> Filmes: ${titleParts.join(' | ')}`;
+  } else {
+    movieListTitle.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-film"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 3v18"/><path d="M3 7.5h18"/><path d="M3 12h18"/><path d="M3 16.5h18"/></svg> Filmes Populares`;
   }
 }
 
@@ -478,12 +553,31 @@ async function fetchAgeRating(movieId) {
   return null;
 }
 
+// Nova função para buscar provedores de streaming
+async function fetchWatchProviders(movieId) {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/tmdb/movie/${movieId}/watch/providers`);
+    // O TMDb retorna provedores por país. Filtrar para o Brasil (BR).
+    const brProviders = response.data.results.BR;
+
+    if (brProviders) {
+      // Retorna apenas os provedores de streaming (flatrate)
+      return brProviders.flatrate || [];
+    }
+  } catch (error) {
+    console.error(`Erro ao buscar provedores de streaming para o filme ${movieId}:`, error);
+  }
+  return []; // Retorna um array vazio se não houver provedores ou erro
+}
+
+
 // Busca o trailer do YouTube
 async function fetchYoutubeTrailer(movieTitle) {
   try {
     let year = '';
     if (window.lastMovieYear) year = window.lastMovieYear;
-    const response = await axios.get('http://localhost:5000/api/youtube/trailer', {
+    // CORREÇÃO: Usando API_BASE_URL para a chamada da API do YouTube
+    const response = await axios.get(`${API_BASE_URL}/youtube/trailer`, {
       params: { title: movieTitle, year }
     });
     return response.data.trailerUrl || null;
@@ -526,6 +620,27 @@ async function showContentDetails(movieId) {
     });
     const movie = movieResponse.data;
 
+    // Busca provedores de streaming
+    const watchProviders = await fetchWatchProviders(movieId);
+    let providersHtml = '';
+    if (watchProviders.length > 0) {
+      providersHtml = `
+        <div class="mt-4">
+          <h4 class="text-lg font-semibold text-white mb-2">Onde Assistir:</h4>
+          <div class="flex flex-wrap gap-3">
+            ${watchProviders.map(provider => `
+              <div class="flex flex-col items-center">
+                <img src="https://image.tmdb.org/t/p/original${provider.logo_path}" alt="${provider.provider_name}" class="w-12 h-12 rounded-lg shadow-md border border-slate-700">
+                <span class="text-xs text-slate-400 mt-1 text-center">${provider.provider_name}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    } else {
+      providersHtml = `<p class="text-slate-500 mt-4">Não disponível em streaming no Brasil.</p>`;
+    }
+
     // Usa os dados de release_dates já buscados
     const ageRatingData = movie.release_dates;
     let trailerUrl = '';
@@ -541,12 +656,17 @@ async function showContentDetails(movieId) {
     // Classificação indicativa brasileira (apenas a primeira, sem fallback genérico)
     let ratingBadges = '';
     if (ageRatingData && Array.isArray(ageRatingData.results)) {
-      const brReleaseDates = ageRatingData.results.find(item => item.iso_3166_1 === 'BR');
-      const certification = brReleaseDates?.release_dates[0]?.certification;
-      if (certification && certification.trim() !== '') {
-        ratingBadges = createAgeRatingElement({ certification }).outerHTML;
+      // Prioriza o flag 'adult' para exibir '+18'
+      if (movie.adult) {
+        ratingBadges = createAgeRatingElement({ certification: '18' }).outerHTML;
       } else {
-        ratingBadges = '<span class="text-slate-500 text-xs">N/D</span>';
+        const brReleaseDates = ageRatingData.results.find(item => item.iso_3166_1 === 'BR');
+        const certification = brReleaseDates?.release_dates[0]?.certification;
+        if (certification && certification.trim() !== '') {
+          ratingBadges = createAgeRatingElement({ certification }).outerHTML;
+        } else {
+          ratingBadges = '<span class="text-slate-500 text-xs">N/D</span>';
+        }
       }
     } else {
       ratingBadges = '<span class="text-slate-500 text-xs">N/D</span>';
@@ -566,7 +686,7 @@ async function showContentDetails(movieId) {
               <div class="bg-black bg-opacity-70 rounded px-2 py-1 mb-1 text-xs text-white flex items-center gap-2">
                 <span class="font-bold">${movie.runtime} min</span>
                 <span class="flex items-center gap-1">
-                  <svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='gold' stroke='gold' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='lucide lucide-star-fill'><polygon points='12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2'/></svg>
+                  <svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='currentColor' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='lucide lucide-star-fill'><polygon points='12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2'/></svg>
                   <span>${movie.vote_average.toFixed(1)}</span>
                 </span>
               </div>
@@ -616,6 +736,7 @@ async function showContentDetails(movieId) {
               ${movie.overview || ''}
             </p>
           </div>
+          ${providersHtml} <!-- Adiciona a seção "Onde Assistir" aqui -->
         </div>
       </div>
       <div class="mt-6"></div>
@@ -720,7 +841,9 @@ applyFiltersBtn.addEventListener('click', () => {
   currentFilters = {
     genre: genreSelect.value,
     year: yearSelect.value,
-    rating: ratingSelect.value
+    rating: ratingSelect.value,
+    watchWith: watchWithSelect.value, // Adiciona o valor do novo seletor
+    platform: platformSelect.value    // Adiciona o valor do novo seletor
   };
   fetchMovies(currentPage, currentFilters);
 });
@@ -755,7 +878,7 @@ window.addEventListener('scroll', () => {
 document.addEventListener('DOMContentLoaded', () => {
   fetchAndPopulateGenres(); // Busca e popula os gêneros dinamicamente
   populateYearSelect(); // Povoa o seletor de anos
-  fetchMovies(); // Busca filmes populares
+  fetchMovies(); // Busca filmes populares (chamada inicial sem filtros)
   fetchAndRenderNowPlayingCarousel(); // Lançamentos recentes
   fetchAndRenderUpcomingCarousel(); // Próximos Lançamentos
 
@@ -772,4 +895,9 @@ document.addEventListener('DOMContentLoaded', () => {
   nowPlayingCarouselTrack.addEventListener('mouseleave', () => startCarouselAutoScroll(nowPlayingCarouselTrack, nowPlayingAnimationFrameId));
   upcomingCarouselTrack.addEventListener('mouseenter', () => stopCarouselAutoScroll(upcomingAnimationFrameId));
   upcomingCarouselTrack.addEventListener('mouseleave', () => startCarouselAutoScroll(upcomingCarouselTrack, upcomingAnimationFrameId));
+
+  // Se o PIN já estiver validado na sessão, remove o desfoque das capas
+  if (pinValidated) {
+    removeBlurFromAdultMovies();
+  }
 });

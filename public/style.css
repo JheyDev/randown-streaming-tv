@@ -323,8 +323,8 @@ main {
 
 .movies-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 2rem;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); /* Reduzido de 280px para 160px */
+    gap: 1.5rem; /* Ajustado o espaçamento */
 }
 
 .movie-card {
@@ -346,12 +346,12 @@ main {
 
 .movie-poster {
     width: 100%;
-    height: auto;
-    display: block;
+    height: 240px; /* Altura fixa para as imagens dos cards, ajustado de 280px */
+    object-fit: cover;
 }
 
 .movie-info {
-    padding: 1rem;
+    padding: 0.75rem; /* Reduzido o padding */
     flex-grow: 1;
     display: flex;
     flex-direction: column;
@@ -359,15 +359,15 @@ main {
 }
 
 .movie-title {
-    font-size: 1.15rem;
+    font-size: 1rem; /* Reduzido de 1.15rem para 1rem */
     font-weight: 600;
     color: #ffffff;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.4rem; /* Ajustado a margem */
     line-height: 1.3;
 }
 
 .movie-meta {
-    font-size: 0.85rem;
+    font-size: 0.8rem; /* Reduzido de 0.85rem para 0.8rem */
     color: #a1a1aa;
     margin-top: auto; /* Empurra para o final do card */
 }
@@ -656,8 +656,17 @@ main {
         flex-direction: column;
     }
     .movies-grid {
-        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-        gap: 1.2rem;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); /* Ajustado para mobile */
+        gap: 1rem;
+    }
+    .movie-poster {
+        height: 200px; /* Altura fixa para as imagens dos cards em mobile */
+    }
+    .movie-title {
+        font-size: 0.9rem; /* Título ajustado para mobile */
+    }
+    .movie-meta {
+        font-size: 0.75rem; /* Meta ajustado para mobile */
     }
     .modal-header {
         flex-direction: column;
@@ -671,6 +680,52 @@ main {
         margin-top: 1rem;
     }
 }
+
+/* Carousel Navigation Buttons */
+.carousel-nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: rgba(0, 0, 0, 0.5);
+    color: white;
+    padding: 8px;
+    border-radius: 9999px; /* rounded-full */
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    z-index: 10;
+    cursor: pointer;
+    border: none; /* Ensure no default button border */
+}
+
+.carousel-nav-btn:hover {
+    background-color: rgba(0, 0, 0, 0.7);
+    transform: translateY(-50%) scale(1.1); /* Slight scale on hover */
+}
+
+/* Specific positioning for prev/next buttons */
+#now-playing-prev-btn, #upcoming-prev-btn {
+    left: -50px; /* Hidden off-screen */
+}
+
+#now-playing-next-btn, #upcoming-next-btn {
+    right: -50px; /* Hidden off-screen */
+}
+
+/* Show buttons on group hover */
+.group:hover #now-playing-prev-btn,
+.group:hover #upcoming-prev-btn {
+    opacity: 1;
+    left: 0; /* Slide in */
+    transform: translateY(-50%); /* Keep vertical alignment */
+}
+
+.group:hover #now-playing-next-btn,
+.group:hover #upcoming-next-btn {
+    opacity: 1;
+    right: 0; /* Slide in */
+    transform: translateY(-50%); /* Keep vertical alignment */
+}
+
 
 /* Classificações Indicativas Brasileiras */
 .rating-badge {
@@ -713,4 +768,44 @@ main {
 
 .rating-ND {
     background-color: #607D8B; /* Cinza para N/D (Não Disponível) */
+}
+
+/* Estilos para desfoque de capa +18 */
+.blurred-poster {
+    filter: blur(10px); /* Força do desfoque */
+    transition: filter 0.3s ease-in-out; /* Transição suave para o desfoque */
+}
+
+.adult-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column; /* Para centralizar verticalmente o ícone e texto */
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.7); /* Overlay escuro */
+    color: white;
+    font-size: 2rem; /* Tamanho do ícone de cadeado */
+    font-weight: bold;
+    border-radius: 12px; /* Combina com o border-radius do card */
+    transition: opacity 0.3s ease-in-out;
+    z-index: 5; /* Garante que fique acima da imagem */
+    text-align: center; /* Centraliza o texto */
+}
+
+.adult-overlay svg {
+    margin-bottom: 0.5rem; /* Espaçamento entre o ícone e o texto */
+}
+
+.adult-overlay span {
+    font-size: 0.875rem; /* Tamanho do texto "+18" */
+}
+
+/* Opcional: Esconde o overlay no hover se não estiver mais desfocado (após o PIN) */
+.movie-card:not(.blurred-poster) .adult-overlay {
+    opacity: 0;
+    pointer-events: none; /* Permite cliques através do overlay invisível */
 }
